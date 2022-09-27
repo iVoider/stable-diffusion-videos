@@ -147,8 +147,6 @@ class EulerDiscreteScheduler(SchedulerMixin, ConfigMixin):
         noise: Union[torch.FloatTensor, np.ndarray],
         timesteps: Union[torch.IntTensor, np.ndarray],
     ) -> Union[torch.FloatTensor, np.ndarray]:
-        if self.tensor_format == "pt":
-            timesteps = timesteps.to(self.sigmas.device)
         sigmas = self.match_shape(self.sigmas[timesteps], noise)
         noisy_samples = original_samples + noise * sigmas
 
