@@ -322,7 +322,7 @@ class StableDiffusionPipeline(DiffusionPipeline):
         self.scheduler.set_timesteps(num_inference_steps, **extra_set_kwargs)
 
         # if we use LMSDiscreteScheduler, let's make sure latents are mulitplied by sigmas
-        if isinstance(self.scheduler, LMSDiscreteScheduler):
+        if not isinstance(self.scheduler, DDIMScheduler) and not isinstance(self.scheduler, PNDMScheduler):
             latents = latents * self.scheduler.sigmas[0]
 
         # prepare extra kwargs for the scheduler step, since not all schedulers have the same signature
@@ -341,7 +341,7 @@ class StableDiffusionPipeline(DiffusionPipeline):
             latent_model_input = (
                 torch.cat([latents] * 2) if do_classifier_free_guidance else latents
             )
-            if isinstance(self.scheduler, LMSDiscreteScheduler):
+            if not isinstance(self.scheduler, DDIMScheduler) and not isinstance(self.scheduler, PNDMScheduler):
                 sigma = self.scheduler.sigmas[i]
                 # the model input needs to be scaled to match the continuous ODE formulation in K-LMS
                 latent_model_input = latent_model_input / ((sigma**2 + 1) ** 0.5)
@@ -359,7 +359,7 @@ class StableDiffusionPipeline(DiffusionPipeline):
                 )
 
             # compute the previous noisy sample x_t -> x_t-1
-            if isinstance(self.scheduler, LMSDiscreteScheduler):
+            if not isinstance(self.scheduler, DDIMScheduler) and not isinstance(self.scheduler, PNDMScheduler):
                 latents = self.scheduler.step(
                     noise_pred, i, latents, **extra_step_kwargs
                 )["prev_sample"]
