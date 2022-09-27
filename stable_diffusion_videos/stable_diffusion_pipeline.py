@@ -20,16 +20,43 @@ from scipy import integrate
 from diffusers.configuration_utils import ConfigMixin, register_to_config
 from diffusers.schedulers.scheduling_utils import SchedulerMixin, SchedulerOutput
 
+# Copyright 2022 Katherine Crowson, The HuggingFace Team and hlky. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from typing import Optional, Tuple, Union
+
+import numpy as np
+import torch
+
+from scipy import integrate
+
+from ..configuration_utils import ConfigMixin, register_to_config
+from .scheduling_utils import SchedulerMixin, SchedulerOutput
+
+
 class EulerDiscreteScheduler(SchedulerMixin, ConfigMixin):
     """
     Implements Algorithm 2 (Euler steps) from Karras et al. (2022).
     for discrete beta schedules. Based on the original k-diffusion implementation by
     Katherine Crowson:
     https://github.com/crowsonkb/k-diffusion/blob/481677d114f6ea445aa009cf5bd7a9cdee909e47/k_diffusion/sampling.py#L51
+
     [`~ConfigMixin`] takes care of storing all config attributes that are passed in the scheduler's `__init__`
     function, such as `num_train_timesteps`. They can be accessed via `scheduler.config.num_train_timesteps`.
     [`~ConfigMixin`] also provides general loading and saving functionality via the [`~ConfigMixin.save_config`] and
     [`~ConfigMixin.from_config`] functions.
+
     Args:
         num_train_timesteps (`int`): number of diffusion steps used to train the model.
         beta_start (`float`): the starting `beta` value of inference.
@@ -42,12 +69,13 @@ class EulerDiscreteScheduler(SchedulerMixin, ConfigMixin):
             options to clip the variance used when adding noise to the denoised sample. Choose from `fixed_small`,
             `fixed_small_log`, `fixed_large`, `fixed_large_log`, `learned` or `learned_range`.
         tensor_format (`str`): whether the scheduler expects pytorch or numpy arrays.
+
     """
 
     @register_to_config
     def __init__(
         self,
-        num_train_timesteps: int = 50,
+        num_train_timesteps: int = 1000,
         beta_start: float = 0.00085, #sensible defaults
         beta_end: float = 0.012,
         beta_schedule: str = "linear",
@@ -80,6 +108,7 @@ class EulerDiscreteScheduler(SchedulerMixin, ConfigMixin):
     def set_timesteps(self, num_inference_steps: int):
         """
         Sets the timesteps used for the diffusion chain. Supporting function to be run before inference.
+
         Args:
             num_inference_steps (`int`):
                 the number of diffusion steps used when generating samples with a pre-trained model.
@@ -107,12 +136,12 @@ class EulerDiscreteScheduler(SchedulerMixin, ConfigMixin):
         s_tmin:  float = 0.,
         s_tmax: float = float('inf'),
         s_noise:  float = 1.,
-        generator=None,
         return_dict: bool = True,
     ) -> Union[SchedulerOutput, Tuple]:
         """
         Predict the sample at the previous timestep by reversing the SDE. Core function to propagate the diffusion
         process from the learned model outputs (most often the predicted noise).
+
         Args:
             model_output (`torch.FloatTensor` or `np.ndarray`): direct output from learned diffusion model.
             timestep (`int`): current discrete timestep in the diffusion chain.
@@ -123,14 +152,16 @@ class EulerDiscreteScheduler(SchedulerMixin, ConfigMixin):
             s_tmax  (`float`)
             s_noise (`float`)
             return_dict (`bool`): option for returning tuple rather than SchedulerOutput class
+
         Returns:
             [`~schedulers.scheduling_utils.SchedulerOutput`] or `tuple`:
             [`~schedulers.scheduling_utils.SchedulerOutput`] if `return_dict` is True, otherwise a `tuple`. When
             returning a tuple, the first element is the sample tensor.
+
         """
         sigma = self.sigmas[timestep]
         gamma = min(s_churn / (len(self.sigmas) - 1), 2 ** 0.5 - 1) if s_tmin <= sigma <= s_tmax else 0.
-        eps = torch.randn(sample.size(), dtype=sample.dtype, layout=sample.layout, device=sample.device, generator=generator) * s_noise
+        eps = torch.randn_like(sample) * s_noise
         sigma_hat = sigma * (gamma + 1)
         if gamma > 0:
             sample = sample + eps * (sigma_hat ** 2 - sigma ** 2) ** 0.5
