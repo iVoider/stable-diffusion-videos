@@ -128,7 +128,6 @@ class EulerDiscreteScheduler(SchedulerMixin, ConfigMixin):
             [`~schedulers.scheduling_utils.SchedulerOutput`] if `return_dict` is True, otherwise a `tuple`. When
             returning a tuple, the first element is the sample tensor.
         """
-        print(timestep, self.num_inference_steps, self.timesteps)
         sigma = self.sigmas[timestep.long()]
         gamma = min(s_churn / (len(self.sigmas) - 1), 2 ** 0.5 - 1) if s_tmin <= sigma <= s_tmax else 0.
         eps = torch.randn(sample.size(), dtype=sample.dtype, layout=sample.layout, device=sample.device, generator=generator) * s_noise
@@ -379,14 +378,11 @@ class StableDiffusionPipeline(DiffusionPipeline):
         safety_cheker_input = self.feature_extractor(
             self.numpy_to_pil(image), return_tensors="pt"
         ).to(self.device)
-        image, has_nsfw_concept = self.safety_checker(
-            images=image, clip_input=safety_cheker_input.pixel_values
-        )
 
         if output_type == "pil":
             image = self.numpy_to_pil(image)
 
-        return {"sample": image, "nsfw_content_detected": has_nsfw_concept}
+        return {"sample": image, "nsfw_content_detected": False}
 
     def embed_text(self, text):
         """Helper to embed some text"""
