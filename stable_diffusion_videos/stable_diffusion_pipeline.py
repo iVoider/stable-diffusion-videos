@@ -128,7 +128,7 @@ class EulerDiscreteScheduler(SchedulerMixin, ConfigMixin):
             [`~schedulers.scheduling_utils.SchedulerOutput`] if `return_dict` is True, otherwise a `tuple`. When
             returning a tuple, the first element is the sample tensor.
         """
-        sigma = self.sigmas[timestep.long()]
+        sigma = self.sigmas[timestep]
         gamma = min(s_churn / (len(self.sigmas) - 1), 2 ** 0.5 - 1) if s_tmin <= sigma <= s_tmax else 0.
         eps = torch.randn(sample.size(), dtype=sample.dtype, layout=sample.layout, device=sample.device, generator=generator) * s_noise
         sigma_hat = sigma * (gamma + 1)
@@ -141,7 +141,7 @@ class EulerDiscreteScheduler(SchedulerMixin, ConfigMixin):
         derivative = (sample - pred_original_sample) / sigma_hat
         self.derivatives.append(derivative)
 
-        dt = self.sigmas[timestep.long() + 1] - sigma_hat
+        dt = self.sigmas[timestep + 1] - sigma_hat
 
         prev_sample = sample + derivative * dt
 
