@@ -153,7 +153,7 @@ class EulerDiscreteScheduler(SchedulerMixin, ConfigMixin):
 
         if not return_dict:
             return (prev_sample,)
-
+        print("step")
         return SchedulerOutput(prev_sample=prev_sample)
 
     def add_noise(
