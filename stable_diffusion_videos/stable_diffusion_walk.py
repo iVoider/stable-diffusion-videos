@@ -119,6 +119,7 @@ class EulerDiscreteScheduler(SchedulerMixin, ConfigMixin):
             [`~schedulers.scheduling_utils.SchedulerOutput`] if `return_dict` is True, otherwise a `tuple`. When
             returning a tuple, the first element is the sample tensor.
         """
+        print(type(self.sigmas), type(timestep))
         sigma = self.sigmas[timestep]
         gamma = min(s_churn / (len(self.sigmas) - 1), 2 ** 0.5 - 1) if s_tmin <= sigma <= s_tmax else 0.
         eps = torch.randn(sample.size(), dtype=sample.dtype, layout=sample.layout, device=sample.device, generator=generator) * s_noise
@@ -147,6 +148,8 @@ class EulerDiscreteScheduler(SchedulerMixin, ConfigMixin):
         noise: Union[torch.FloatTensor, np.ndarray],
         timesteps: Union[torch.IntTensor, np.ndarray],
     ) -> Union[torch.FloatTensor, np.ndarray]:
+        if self.tensor_format == "pt":
+            timesteps = timesteps.to(self.sigmas.device)
         sigmas = self.match_shape(self.sigmas[timesteps], noise)
         noisy_samples = original_samples + noise * sigmas
 
