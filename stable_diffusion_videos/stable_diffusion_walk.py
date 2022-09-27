@@ -5,10 +5,10 @@ from pathlib import Path
 import numpy as np
 import torch
 from diffusers.schedulers import (DDIMScheduler, LMSDiscreteScheduler, PNDMScheduler)
-from diffusers import ModelMixin
+from typing import Optional, Tuple, Union
+from scipy import integrate
 from diffusers.configuration_utils import ConfigMixin, register_to_config
 from diffusers.schedulers.scheduling_utils import SchedulerMixin, SchedulerOutput
-
 from .stable_diffusion_pipeline import StableDiffusionPipeline
 
 class EulerDiscreteScheduler(SchedulerMixin, ConfigMixin):
