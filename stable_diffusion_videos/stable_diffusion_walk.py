@@ -217,7 +217,7 @@ def walk(
         seeds.append(first_seed)
 
     frame_index = 0
-    for prompt, seed, latent in zip(prompts, seeds, latent):
+    for prompt, seed, latent in zip(prompts, seeds, latents):
         # Text
         embeds_b = pipeline.embed_text(prompt)
 
