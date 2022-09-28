@@ -77,6 +77,7 @@ def make_video_ffmpeg(frame_dir, output_file_name='output.mp4', frame_filename="
 def walk(
     prompts=["blueberry spaghetti", "strawberry spaghetti"],
     seeds=[42, 123],
+    latents = [],
     num_steps=5,
     output_dir="dreams",
     name="berry_good_spaghetti",
@@ -206,27 +207,22 @@ def walk(
     embeds_a = pipeline.embed_text(first_prompt)
 
     first_seed, *seeds = seeds
-    latents_a = torch.randn(
-        (1, pipeline.unet.in_channels, height // 8, width // 8),
-        device=pipeline.device,
-        generator=torch.Generator(device=pipeline.device).manual_seed(first_seed),
-    )
+
+    first_latent, *latents = latents
+
+    latents_a = first_latent
 
     if do_loop:
         prompts.append(first_prompt)
         seeds.append(first_seed)
 
     frame_index = 0
-    for prompt, seed in zip(prompts, seeds):
+    for prompt, seed, latent in zip(prompts, seeds, latent):
         # Text
         embeds_b = pipeline.embed_text(prompt)
 
         # Latent Noise
-        latents_b = torch.randn(
-            (1, pipeline.unet.in_channels, height // 8, width // 8),
-            device=pipeline.device,
-            generator=torch.Generator(device=pipeline.device).manual_seed(seed),
-        )
+        latents_b = latent
 
         latents_batch, embeds_batch = None, None
         for i, t in enumerate(np.linspace(0, 1, num_steps)):
